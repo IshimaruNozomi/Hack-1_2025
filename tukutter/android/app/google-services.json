@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "70406727070",
+    "project_id": "tukutter-8008e",
+    "storage_bucket": "tukutter-8008e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70406727070:android:c0317aeee21e2e198b228f",
+        "android_client_info": {
+          "package_name": "com.tukutterapp.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "70406727070-qbb641ad63841ceg3snbs8lvb8dp1ako.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCo1HyBWA_S0eW3QW6u_RynPhP_rVIsspk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "70406727070-km2l5q3btsviuv5e7sqpbqjrnviga542.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
