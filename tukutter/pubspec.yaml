@@ -10,10 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  firebase_core: ^2.10.0        # Firebaseのコア初期化用
-  firebase_auth: ^4.4.0         # 認証用（ログインなど）
-  cloud_firestore: ^4.5.0       # Firestore用（データベース）
-  google_sign_in: ^6.0.0        # Googleログイン用
+  firebase_core: ^3.13.0        # Firebaseのコア初期化用 ^2.10.0 から ^2.32.0に変更
+  firebase_auth: ^5.5.3         # 認証用（ログインなど） ^4.4.0 から 4.16.0に変更
+  cloud_firestore: ^5.6.7       # Firestore用（データベース）
+  google_sign_in: ^6.3.0        # Googleログイン用 ^6.0.0 から 6.2.0に変更
   http: ^1.0.0                  # Cloudinary用（画像アップロードに使うこともある）
 
 dev_dependencies:
