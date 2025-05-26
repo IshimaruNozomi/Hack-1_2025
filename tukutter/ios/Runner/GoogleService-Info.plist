@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBSGoF9VDRChH5X0VIrQ9nL8vCWiEdeoHM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>70406727070</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tukutterapp.ios</string>
+	<key>PROJECT_ID</key>
+	<string>tukutter-8008e</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tukutter-8008e.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:70406727070:ios:57c812584cb8d4508b228f</string>
+</dict>
+</plist>
