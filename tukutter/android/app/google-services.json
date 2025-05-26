@@ -7,6 +7,42 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:70406727070:android:a48961e741f084a38b228f",
+        "android_client_info": {
+          "package_name": "com.example.tukutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "70406727070-qbb641ad63841ceg3snbs8lvb8dp1ako.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCo1HyBWA_S0eW3QW6u_RynPhP_rVIsspk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "70406727070-km2l5q3btsviuv5e7sqpbqjrnviga542.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tukutterapp.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:70406727070:android:c0317aeee21e2e198b228f",
         "android_client_info": {
           "package_name": "com.tukutterapp.android"
@@ -29,6 +65,13 @@
             {
               "client_id": "70406727070-km2l5q3btsviuv5e7sqpbqjrnviga542.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tukutterapp.ios"
+              }
             }
           ]
         }
