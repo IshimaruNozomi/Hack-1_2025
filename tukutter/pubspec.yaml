@@ -15,6 +15,8 @@ dependencies:
   cloud_firestore: ^5.6.8       # Firestore用（データベース） 4.5.0->5.6.8
   google_sign_in: ^6.2.1        # Googleログイン用 6.0.0->6.2.1
   http: ^1.0.0                  # Cloudinary用（画像アップロードに使うこともある）
+  image_picker: ^1.0.0  # 画像選択
+  mime: ^1.0.0          # MIMEタイプ判定（画像アップロード時に必要）
 
 dev_dependencies:
   flutter_test:
