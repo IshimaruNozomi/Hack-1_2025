@@ -69,3 +69,70 @@ def get_posts():
         return posts
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
+
+# ==============================
+# プロフィールモデル
+# ==============================
+class Profile(BaseModel):
+    user_id: str
+    name: str
+    bio: str = ''
+    icon_url: str = ''
+
+# プロフィール作成/更新
+@app.post("/create_profile")
+def create_profile(profile: Profile):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO user_profiles (user_id, name, bio, icon_url)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (user_id) DO UPDATE
+            SET name = EXCLUDED.name,
+                bio = EXCLUDED.bio,
+                icon_url = EXCLUDED.icon_url
+        """, (profile.user_id, profile.name, profile.bio, profile.icon_url))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"message": "プロフィール作成/更新完了"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
+
+# プロフィール取得
+@app.get("/profile/{user_id}", response_model=Profile)
+def get_profile(user_id: str):
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM user_profiles WHERE user_id = %s", (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            return Profile(**row)
+        else:
+            raise HTTPException(status_code=404, detail="プロフィールが見つかりません")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
+
+# プロフィール編集
+@app.put("/update_profile/{user_id}")
+def update_profile(user_id: str, profile: Profile):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE user_profiles
+            SET name = %s,
+                bio = %s,
+                icon_url = %s
+            WHERE user_id = %s
+        """, (profile.name, profile.bio, profile.icon_url, user_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"message": "プロフィール更新完了"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
