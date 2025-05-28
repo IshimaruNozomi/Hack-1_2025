@@ -136,3 +136,29 @@ def update_profile(user_id: str, profile: Profile):
         return {"message": "プロフィール更新完了"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
+    
+@app.get("/users/{user_id}/posts", response_model=List[PostOut])
+def get_user_posts(user_id: str):
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(
+            "SELECT id, user_id, content, image_url, created_at FROM posts WHERE user_id = %s ORDER BY created_at DESC",
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        posts = [
+            PostOut(
+                id=row["id"],
+                user_id=row["user_id"],
+                content=row["content"],
+                image_url=row["image_url"],
+                created_at=row["created_at"].isoformat()
+            )
+            for row in rows
+        ]
+        cur.close()
+        conn.close()
+        return posts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DBエラー: {e}")

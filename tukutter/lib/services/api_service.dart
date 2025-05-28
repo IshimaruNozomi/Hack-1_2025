@@ -86,4 +86,20 @@ class ApiService {
       return false;
     }
   }
+
+  // 指定ユーザーの投稿一覧を取得
+  static Future<List<Post>> fetchPostsByUser(String userId) async {
+  final url = Uri.parse('$_baseUrl/users/$userId/posts');
+
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> jsonList = jsonDecode(response.body);
+    return jsonList.map((json) => Post.fromJson(json)).toList();
+  } else {
+    print("ユーザー投稿一覧の取得に失敗: ${response.statusCode}");
+    throw Exception("Failed to load user posts");
+  }
+}
+
 }
