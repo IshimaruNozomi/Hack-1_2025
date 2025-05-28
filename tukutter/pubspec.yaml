@@ -19,6 +19,7 @@ dependencies:
   mime: ^1.0.0          # MIMEタイプ判定（画像アップロード時に必要）
   path: ^1.8.3
   http_parser: ^4.0.2
+  http: ^0.13.6
 
 dev_dependencies:
   flutter_test:
