@@ -14,7 +14,7 @@ app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Firebase Admin SDK の初期化（1回だけ）
-cred = credentials.Certificate("tukutter/fastapi_backend/tukutter-8008e-firebase-adminsdk-fbsvc-044e51cfb2.json")  # ←重要
+cred = credentials.Certificate("/Users/nozomi0407/Hack-1_2025/tukutter/fastapi_backend/tukutter-8008e-firebase-adminsdk-fbsvc-044e51cfb2.json")  # ←重要
 initialize_app(cred)
 
 class LoginRequest(BaseModel):
