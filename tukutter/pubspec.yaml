@@ -17,6 +17,7 @@ dependencies:
   http: ^1.0.0                  # Cloudinary用（画像アップロードに使うこともある）
   image_picker: ^1.0.0  # 画像選択
   mime: ^1.0.0          # MIMEタイプ判定（画像アップロード時に必要）
+  path_provider: ^2.1.1
   path: ^1.8.3
   http_parser: ^4.0.2
   http: ^0.13.6

@@ -1,10 +1,20 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 import psycopg2
 import psycopg2.extras
+import os
+import shutil
+import uuid  # ユニークなファイル名生成用
 
 app = FastAPI()
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# アップロード先ディレクトリ
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # 投稿データ用のPydanticモデル
 class Post(BaseModel):
@@ -28,6 +38,31 @@ DB_CONFIG = {
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
+
+@app.get("/")
+def root():
+    return {"message": "API is working"}
+
+# 画像アップロードエンドポイント
+@app.post("/upload_image")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        # 拡張子チェック（画像ファイル限定）
+        if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+            raise HTTPException(status_code=400, detail="画像ファイル（png, jpg, jpeg, gif）のみ対応しています")
+
+        # ユニークなファイル名を生成して保存
+        extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4().hex}{extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        image_url = f"/{UPLOAD_DIR}/{unique_filename}"  # フロントで使えるURLパスとして返却
+        return {"image_url": image_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"アップロード失敗: {e}")
 
 # 投稿作成エンドポイント
 @app.post("/create_post")
@@ -136,7 +171,7 @@ def update_profile(user_id: str, profile: Profile):
         return {"message": "プロフィール更新完了"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
-    
+
 @app.get("/users/{user_id}/posts", response_model=List[PostOut])
 def get_user_posts(user_id: str):
     try:
