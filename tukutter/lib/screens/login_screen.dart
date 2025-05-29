@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'timeline_screen.dart'; // タイムライン画面（別途定義）
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatelessWidget {
   Future<User?> _signInWithGoogle(BuildContext context) async {
@@ -33,10 +35,28 @@ class LoginScreen extends StatelessWidget {
           onPressed: () async {
             final user = await _signInWithGoogle(context);
             if (user != null) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => TimelineScreen()),
+              // FastAPIにプロフィール情報を送る
+              final response = await http.post(
+                Uri.parse('http://<YOUR_API_HOST>:8000/create_profile'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'user_id': user.uid,
+                  'name': user.displayName ?? '',
+                  'bio': '',
+                  'icon_url': user.photoURL ?? ''
+                }),
               );
+
+              if (response.statusCode == 200) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => TimelineScreen(userId: user.uid)),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("サーバーへのプロフィール送信に失敗しました")),
+                );
+              }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("ログインに失敗しました")),

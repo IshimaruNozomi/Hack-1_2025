@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
+from firebase_admin import auth, credentials, initialize_app
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
@@ -11,6 +12,13 @@ import uuid  # ユニークなファイル名生成用
 
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# Firebase Admin SDK の初期化（1回だけ）
+cred = credentials.Certificate("path/to/your/firebase-adminsdk.json")  # ←重要
+initialize_app(cred)
+
+class LoginRequest(BaseModel):
+    id_token: str
 
 # アップロード先ディレクトリ
 UPLOAD_DIR = "uploads"
@@ -42,6 +50,19 @@ def get_connection():
 @app.get("/")
 def root():
     return {"message": "API is working"}
+
+@app.post("/login")
+def login_user(login_request: LoginRequest):
+    try:
+        decoded_token = auth.verify_id_token(login_request.id_token)
+        uid = decoded_token["uid"]
+        email = decoded_token.get("email", "")
+        name = decoded_token.get("name", "")
+
+        # 必要ならここでDBにユーザー登録する
+        return {"uid": uid, "email": email, "name": name}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"無効なトークン: {e}")
 
 # 画像アップロードエンドポイント
 @app.post("/upload_image")
