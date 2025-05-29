@@ -2,6 +2,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/post.dart';
 import '../models/user_profile.dart'; // 追加
+import 'dart:io';
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
+
 
 class ApiService {
   static const String _baseUrl = 'http://127.0.0.1:8000'; // FastAPIのURL（適宜変更）
@@ -101,5 +105,28 @@ class ApiService {
     throw Exception("Failed to load user posts");
   }
 }
+
+static Future<String?> uploadProfileImage(String userId, File imageFile) async {
+    final url = Uri.parse('$_baseUrl/upload_profile_image/$userId');
+
+    final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
+    final request = http.MultipartRequest('POST', url)
+      ..files.add(await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+        contentType: MediaType.parse(mimeType),
+      ));
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return data['url'];
+    } else {
+      print('画像アップロード失敗: ${response.statusCode}');
+      return null;
+    }
+  }
 
 }
