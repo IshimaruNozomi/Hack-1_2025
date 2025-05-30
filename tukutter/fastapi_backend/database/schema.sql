@@ -12,3 +12,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   bio TEXT DEFAULT '',
   icon_url TEXT DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS likes (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    UNIQUE (post_id, user_id)
+);

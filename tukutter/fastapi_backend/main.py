@@ -1,9 +1,13 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, APIRouter, HTTPException, Depends, File
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials, initialize_app
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
+from sqlalchemy.orm import Session
+from models import Like
+from schemas import LikeCreate
+from database import get_db
 import psycopg2
 import psycopg2.extras
 import os
@@ -218,3 +222,21 @@ def get_user_posts(user_id: str):
         return posts
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
+
+router = APIRouter()
+
+@router.post("/like")
+def like_post(like: LikeCreate, db: Session = Depends(get_db)):
+    existing_like = db.query(Like).filter_by(post_id=like.post_id, user_id=like.user_id).first()
+    if existing_like:
+        raise HTTPException(status_code=400, detail="Already liked this post")
+
+    new_like = Like(post_id=like.post_id, user_id=like.user_id)
+    db.add(new_like)
+    db.commit()
+    return {"message": "Liked successfully"}
+
+@router.get("/likes/{post_id}")
+def get_like_count(post_id: int, db: Session = Depends(get_db)):
+    count = db.query(Like).filter_by(post_id=post_id).count()
+    return {"post_id": post_id, "likes": count}
