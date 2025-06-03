@@ -4,6 +4,17 @@ import '../services/api_service.dart';
 import 'profile_screen.dart'; // プロフィール画面をインポート
 
 class TimelineScreen extends StatefulWidget {
+  final String uid;
+  final String email;
+  final String name;
+
+  const TimelineScreen({
+    Key? key,
+    required this.uid,
+    required this.email,
+    required this.name,
+  }) : super(key: key);
+
   @override
   _TimelineScreenState createState() => _TimelineScreenState();
 }
@@ -20,7 +31,23 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('タイムライン')),
+      appBar: AppBar(
+        title: Text('タイムライン'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () {
+              // 自分のプロフィールへ遷移
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfileScreen(userId: widget.uid),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Post>>(
         future: _postsFuture,
         builder: (context, snapshot) {
