@@ -8,8 +8,8 @@ plugins {
 
 android {
     namespace = "com.example.tukutter"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 35 // flutter.compileSdkVersionから35に変更
+    ndkVersion = "27.0.12077973" // flutter.ndkVersionから変更
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -25,10 +25,10 @@ android {
         applicationId = "com.example.tukutter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = 23 //flutter.minSdkVersionから変更
+        targetSdk = 35 // flutter.targetSdkVersionから変更
+        versionCode = 1 // flutter.versionCodeから変更
+        versionName = "1.0" // flutter.versionNameから変更
     }
 
     buildTypes {
@@ -58,4 +58,3 @@ flutter {
     source = "../.."
 }
 
-apply(plugin = "com.google.gms.google-services")
