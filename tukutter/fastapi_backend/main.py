@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
-from models import Like
+from fastapi_backend import models, schemas
+from models import Like, Comment
 from schemas import LikeCreate
 from database import get_db
 import psycopg2
@@ -240,3 +241,15 @@ def like_post(like: LikeCreate, db: Session = Depends(get_db)):
 def get_like_count(post_id: int, db: Session = Depends(get_db)):
     count = db.query(Like).filter_by(post_id=post_id).count()
     return {"post_id": post_id, "likes": count}
+
+@app.post("/comments", response_model=schemas.CommentRead)
+def create_comment(comment: schemas.CommentCreate, db: Session = Depends(get_db)):
+    db_comment = models.Comment(**comment.dict())
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+@app.get("/comments/{post_id}", response_model=List[schemas.CommentRead])
+def get_comments(post_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Comment).filter(models.Comment.post_id == post_id).all()
