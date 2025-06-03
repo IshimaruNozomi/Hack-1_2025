@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../services/api_service.dart';
-import 'profile_screen.dart'; // プロフィール画面をインポート
+import 'profile_screen.dart';
 
 class TimelineScreen extends StatefulWidget {
   final String uid;
@@ -25,7 +25,44 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchPosts();
+  }
+
+  void _fetchPosts() {
     _postsFuture = ApiService.fetchPosts();
+  }
+
+  void _deletePost(String postId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('確認'),
+        content: Text('この投稿を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ApiService.deletePost(postId);
+        setState(() {
+          _fetchPosts(); // 再取得
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('削除に失敗しました')),
+        );
+      }
+    }
   }
 
   @override
@@ -37,7 +74,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
           IconButton(
             icon: Icon(Icons.person),
             onPressed: () {
-              // 自分のプロフィールへ遷移
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -64,6 +100,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
             itemCount: posts.length,
             itemBuilder: (context, index) {
               final post = posts[index];
+              final isMine = post.userId == widget.uid;
+
               return Card(
                 margin: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 child: ListTile(
@@ -78,7 +116,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   ),
                   title: GestureDetector(
                     onTap: () {
-                      // ユーザー名タップ時にプロフィール画面へ遷移
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -107,6 +144,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       ),
                     ],
                   ),
+                  trailing: isMine
+                      ? IconButton(
+                          icon: Icon(Icons.delete, color: Colors.redAccent),
+                          onPressed: () => _deletePost(post.postId),
+                        )
+                      : null,
                 ),
               );
             },

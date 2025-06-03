@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException, UploadFile, APIRouter, HTTPException, Depends, File
+from fastapi import FastAPI, HTTPException, UploadFile, APIRouter, Depends, File
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials, initialize_app
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
 from fastapi_backend import models, schemas
 from models import Like, Comment
 from schemas import LikeCreate
@@ -22,25 +22,11 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 cred = credentials.Certificate("tukutter-8008e-firebase-adminsdk-fbsvc-044e51cfb2.json")  # ←重要
 initialize_app(cred)
 
-class LoginRequest(BaseModel):
-    id_token: str
-
 # アップロード先ディレクトリ
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# 投稿データ用のPydanticモデル
-class Post(BaseModel):
-    user_id: str
-    content: str
-    image_url: str
-
-# タイムライン表示用の出力モデル（id, created_at 付き）
-class PostOut(Post):
-    id: int
-    created_at: str
-
-# データベース接続情報
+# DB接続設定（適宜置き換えてください）
 DB_CONFIG = {
     "host": "localhost",
     "database": "your_database_name",  # ← 実際のDB名に置き換えてください
@@ -52,10 +38,31 @@ DB_CONFIG = {
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
+# Pydanticモデル
+class LoginRequest(BaseModel):
+    id_token: str
+
+class Post(BaseModel):
+    user_id: str
+    content: str
+    image_url: str
+
+class PostOut(Post):
+    id: int
+    created_at: str
+
+class Profile(BaseModel):
+    user_id: str
+    name: str
+    bio: str = ''
+    icon_url: str = ''
+
+# ルート
 @app.get("/")
 def root():
     return {"message": "API is working"}
 
+# ログイン
 @app.post("/login")
 def login_user(login_request: LoginRequest):
     try:
@@ -63,21 +70,18 @@ def login_user(login_request: LoginRequest):
         uid = decoded_token["uid"]
         email = decoded_token.get("email", "")
         name = decoded_token.get("name", "")
-
         # 必要ならここでDBにユーザー登録する
         return {"uid": uid, "email": email, "name": name}
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"無効なトークン: {e}")
 
-# 画像アップロードエンドポイント
+# 画像アップロード
 @app.post("/upload_image")
 async def upload_image(file: UploadFile = File(...)):
     try:
-        # 拡張子チェック（画像ファイル限定）
         if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
             raise HTTPException(status_code=400, detail="画像ファイル（png, jpg, jpeg, gif）のみ対応しています")
 
-        # ユニークなファイル名を生成して保存
         extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4().hex}{extension}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -85,12 +89,12 @@ async def upload_image(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        image_url = f"/{UPLOAD_DIR}/{unique_filename}"  # フロントで使えるURLパスとして返却
+        image_url = f"/{UPLOAD_DIR}/{unique_filename}"
         return {"image_url": image_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"アップロード失敗: {e}")
 
-# 投稿作成エンドポイント
+# 投稿作成
 @app.post("/create_post")
 def create_post(post: Post):
     try:
@@ -107,7 +111,7 @@ def create_post(post: Post):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
 
-# 投稿一覧取得エンドポイント（タイムライン）
+# 投稿一覧取得（タイムライン）
 @app.get("/posts", response_model=List[PostOut])
 def get_posts():
     try:
@@ -131,14 +135,23 @@ def get_posts():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
 
-# ==============================
-# プロフィールモデル
-# ==============================
-class Profile(BaseModel):
-    user_id: str
-    name: str
-    bio: str = ''
-    icon_url: str = ''
+@app.delete("/posts/{post_id}")
+def delete_post(post_id: int):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # まず該当投稿があるか確認
+        cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="投稿が見つかりません")
+        # 投稿削除
+        cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"message": "投稿を削除しました"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"削除中にエラーが発生しました: {e}")
 
 # プロフィール作成/更新
 @app.post("/create_profile")
@@ -198,6 +211,7 @@ def update_profile(user_id: str, profile: Profile):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
 
+# ユーザー投稿一覧取得
 @app.get("/users/{user_id}/posts", response_model=List[PostOut])
 def get_user_posts(user_id: str):
     try:
@@ -224,6 +238,7 @@ def get_user_posts(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
 
+# ルーター登録部分は残す（likes機能）
 router = APIRouter()
 
 @router.post("/like")
@@ -242,6 +257,12 @@ def get_like_count(post_id: int, db: Session = Depends(get_db)):
     count = db.query(Like).filter_by(post_id=post_id).count()
     return {"post_id": post_id, "likes": count}
 
+app.include_router(router)
+
+# ======================
+# コメント関連エンドポイント
+# ======================
+
 @app.post("/comments", response_model=schemas.CommentRead)
 def create_comment(comment: schemas.CommentCreate, db: Session = Depends(get_db)):
     db_comment = models.Comment(**comment.dict())
@@ -251,5 +272,16 @@ def create_comment(comment: schemas.CommentCreate, db: Session = Depends(get_db)
     return db_comment
 
 @app.get("/comments/{post_id}", response_model=List[schemas.CommentRead])
-def get_comments(post_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Comment).filter(models.Comment.post_id == post_id).all()
+def read_comments(post_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Comment).filter(models.Comment.post_id == post_id).order_by(models.Comment.created_at.desc()).all()
+
+@app.delete("/comments/{comment_id}")
+def delete_comment(comment_id: int, db: Session = Depends(get_db)):
+    comment = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="コメントが見つかりません")
+    db.delete(comment)
+    db.commit()
+    return {"message": "コメントを削除しました"}
+
+# 以上
