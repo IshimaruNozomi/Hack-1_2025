@@ -1,7 +1,12 @@
-allprojects {
+buildscript { // allprojectsからbuldscriptに変更し、dependenciesも中に入れる
     repositories {
         google()
         mavenCentral()
+    }
+
+    dependencies {
+    classpath("com.android.tools.build:gradle:7.4.2")
+    classpath("com.google.gms:google-services:4.4.1") // ←★これを追加
     }
 }
 
@@ -20,7 +25,3 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-dependencies {
-    classpath("com.android.tools.build:gradle:7.4.2")
-    classpath("com.google.gms:google-services:4.4.1") // ←★これを追加
-}

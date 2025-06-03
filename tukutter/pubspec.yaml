@@ -14,13 +14,13 @@ dependencies:
   firebase_auth: ^5.5.4         # 認証用（ログインなど） 4.4.0->5.5.4
   cloud_firestore: ^5.6.8       # Firestore用（データベース） 4.5.0->5.6.8
   google_sign_in: ^6.2.1        # Googleログイン用 6.0.0->6.2.1
-  http: ^1.0.0                  # Cloudinary用（画像アップロードに使うこともある）
+  # http: ^1.0.0                  # Cloudinary用（画像アップロードに使うこともある）
   image_picker: ^1.0.0  # 画像選択
   mime: ^1.0.0          # MIMEタイプ判定（画像アップロード時に必要）
   path_provider: ^2.1.1
   path: ^1.8.3
   http_parser: ^4.0.2
-  http: ^0.13.6
+  http: ^0.13.6 # こっちを使う
 
 dev_dependencies:
   flutter_test:
