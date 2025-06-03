@@ -1,3 +1,6 @@
+from pydantic import BaseModel
+from datetime import datetime
+
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     user_id TEXT,
@@ -19,3 +22,26 @@ CREATE TABLE IF NOT EXISTS likes (
     user_id TEXT NOT NULL,
     UNIQUE (post_id, user_id)
 );
+
+CREATE TABLE comment (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+class CommentCreate(BaseModel):
+    post_id: int
+    user_id: int
+    content: str
+
+class CommentRead(BaseModel):
+    id: int
+    post_id: int
+    user_id: int
+    content: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
