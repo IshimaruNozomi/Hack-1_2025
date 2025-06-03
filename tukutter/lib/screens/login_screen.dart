@@ -1,28 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'timeline_screen.dart'; // タイムライン画面（別途定義）
+import 'timeline_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class LoginScreen extends StatelessWidget {
-  Future<User?> _signInWithGoogle(BuildContext context) async {
+  // FastAPI のエンドポイント
+  final String backendUrl = "http://localhost:8000/login"; // ← Androidエミュレータでは10.0.2.2に変更
+
+  Future<Map<String, dynamic>?> _signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      return userCredential.user;
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        // Firebase から ID トークンを取得
+        final String? idToken = await user.getIdToken();
+        if (idToken == null) throw Exception("IDトークン取得失敗");
+
+        // FastAPI にトークン送信
+        final response = await http.post(
+          Uri.parse(backendUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'id_token': idToken}),
+        );
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = json.decode(response.body);
+          return data;
+        } else {
+          print("FastAPI ログイン失敗: ${response.body}");
+          return null;
+        }
+      }
     } catch (e) {
       print("Googleログインエラー: $e");
       return null;
     }
+    return null;
   }
 
   @override
@@ -33,30 +59,18 @@ class LoginScreen extends StatelessWidget {
         child: ElevatedButton(
           child: Text("Googleでログイン"),
           onPressed: () async {
-            final user = await _signInWithGoogle(context);
-            if (user != null) {
-              // FastAPIにプロフィール情報を送る
-              final response = await http.post(
-                Uri.parse('http://<YOUR_API_HOST>:8000/create_profile'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
-                  'user_id': user.uid,
-                  'name': user.displayName ?? '',
-                  'bio': '',
-                  'icon_url': user.photoURL ?? ''
-                }),
+            final userData = await _signInWithGoogle(context);
+            if (userData != null) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TimelineScreen(
+                    uid: userData["uid"],
+                    email: userData["email"],
+                    name: userData["name"],
+                  ),
+                ),
               );
-
-              if (response.statusCode == 200) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => TimelineScreen(userId: user.uid)),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("サーバーへのプロフィール送信に失敗しました")),
-                );
-              }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("ログインに失敗しました")),
