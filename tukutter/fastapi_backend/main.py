@@ -14,6 +14,7 @@ import psycopg2.extras
 import os
 import shutil
 import uuid  # ユニークなファイル名生成用
+from routers import user  # ルーターのモジュール名に応じて
 
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -284,4 +285,5 @@ def delete_comment(comment_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "コメントを削除しました"}
 
-# 以上
+
+app.include_router(user.router)

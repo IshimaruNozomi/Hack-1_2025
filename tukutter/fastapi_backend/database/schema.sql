@@ -31,6 +31,13 @@ CREATE TABLE comment (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE follows (
+  follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  followed_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (follower_id, followed_id)
+);
+
+
 class CommentCreate(BaseModel):
     post_id: int
     user_id: int
