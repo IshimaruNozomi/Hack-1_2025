@@ -3,7 +3,8 @@ import '../models/user_profile.dart';
 import '../models/post.dart';
 import '../services/api_service.dart';
 import 'profile_edit_screen.dart';
-import 'profile_screen.dart'; // 自身の画面に戻る場合も使う
+import 'profile_screen.dart';
+import 'user_search_screen.dart'; // ← 追加
 import '../models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -85,7 +86,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: 5),
               Text(profile.bio),
               SizedBox(height: 10),
-              if (isOwnProfile)
+
+              // 自分のプロフィール時のみ表示
+              if (isOwnProfile) ...[
                 ElevatedButton(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -101,12 +104,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     }
                   },
                   child: Text("編集"),
-                )
-              else
+                ),
+                SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UserSearchScreen()),
+                    );
+                  },
+                  child: Text("ユーザーを検索"),
+                ),
+              ] else
                 ElevatedButton(
                   onPressed: _toggleFollow,
                   child: Text(isFollowing ? "フォロー解除" : "フォロー"),
                 ),
+
               SizedBox(height: 20),
               Divider(),
               Padding(

@@ -6,7 +6,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from fastapi_backend import models, schemas
-from models import Like, Comment
+from models import Like, Comment, User
 from schemas import LikeCreate
 from database import get_db
 import psycopg2
@@ -287,3 +287,8 @@ def delete_comment(comment_id: int, db: Session = Depends(get_db)):
 
 
 app.include_router(user.router)
+
+@router.get("/search_users")
+def search_users(query: str, db: Session = Depends(get_db)):
+    users = db.query(User).filter(User.name.ilike(f"%{query}%")).all()
+    return [{"id": user.id, "name": user.name, "bio": user.bio or "", "icon_url": user.icon_url or ""} for user in users]
