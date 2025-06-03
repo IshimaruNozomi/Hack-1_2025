@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "70406727070-pe9qbudacbgljsgcjg1i9t5285e4og67.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tukutter",
+            "certificate_hash": "0f723b8954a878c79505876ae1213f9d342817e7"
+          }
+        },
+        {
           "client_id": "70406727070-qbb641ad63841ceg3snbs8lvb8dp1ako.apps.googleusercontent.com",
           "client_type": 3
         }
