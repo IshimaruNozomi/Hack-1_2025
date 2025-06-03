@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu.apps.googleusercontent.com",
+              "client_id": "70406727070-5ek4omtu5lgr4387c133uco4ll82q8ru.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.tukutterapp.ios"
+                "bundle_id": "com.example.tukutter"
               }
             }
           ]
@@ -67,10 +67,10 @@
               "client_type": 3
             },
             {
-              "client_id": "70406727070-8q1tg9e67ac6225bf547hs6p9j5j4huu.apps.googleusercontent.com",
+              "client_id": "70406727070-5ek4omtu5lgr4387c133uco4ll82q8ru.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.tukutterapp.ios"
+                "bundle_id": "com.example.tukutter"
               }
             }
           ]
