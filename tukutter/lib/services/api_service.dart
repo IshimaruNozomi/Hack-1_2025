@@ -139,5 +139,15 @@ static Future<String?> uploadProfileImage(String userId, File imageFile) async {
   }
 }
 
+static Future<List<UserProfile>> searchUsers(String query) async {
+  final response = await http.get(Uri.parse('$baseUrl/search_users?query=$query'));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => UserProfile.fromJson(json)).toList();
+  } else {
+    throw Exception('ユーザー検索に失敗しました');
+  }
+}
 
 }
