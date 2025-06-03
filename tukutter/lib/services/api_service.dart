@@ -128,5 +128,16 @@ static Future<String?> uploadProfileImage(String userId, File imageFile) async {
       return null;
     }
   }
+  
+  static Future<void> deletePost(String postId) async {
+  final response = await http.delete(
+    Uri.parse('$_baseUrl/posts/$postId'),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('投稿の削除に失敗しました');
+  }
+}
+
 
 }

@@ -64,6 +64,18 @@ class _CommentListState extends State<CommentList> {
     });
   }
 
+  Future<void> deleteComment(int commentId) async {
+    final response = await http.delete(
+      Uri.parse('http://<your-ip>:8000/comments/$commentId'),
+    );
+
+    if (response.statusCode == 200) {
+      await fetchComments(); // 削除後にリストを更新
+    } else {
+      print('Failed to delete comment: ${response.statusCode}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -72,7 +84,16 @@ class _CommentListState extends State<CommentList> {
         ...comments.map((comment) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Text("🗨 ${comment['content']}"),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text("🗨 ${comment['content']}")),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => deleteComment(comment['id']),
+                ),
+              ],
+            ),
           );
         }).toList(),
         const SizedBox(height: 8),
