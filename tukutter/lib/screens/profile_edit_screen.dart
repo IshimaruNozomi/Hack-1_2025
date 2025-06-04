@@ -8,7 +8,7 @@ import '../services/api_service.dart';
 class ProfileEditScreen extends StatefulWidget {
   final UserProfile profile;
 
-  const ProfileEditScreen({required this.profile});
+  const ProfileEditScreen({required this.profile, Key? key}) : super(key: key);
 
   @override
   State<ProfileEditScreen> createState() => _ProfileEditScreenState();
@@ -19,6 +19,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _bioController;
   File? _selectedImage;
   String? _uploadedImageUrl;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -41,18 +42,46 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         setState(() {
           _uploadedImageUrl = url;
         });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('画像アップロードに失敗しました')),
+        );
       }
     }
   }
 
   Future<void> _saveProfile() async {
-    await ApiService.updateUserProfile(
+    setState(() {
+      _isSaving = true;
+    });
+
+    final updatedProfile = UserProfile(
       userId: widget.profile.userId,
       name: _nameController.text,
       bio: _bioController.text,
       iconUrl: _uploadedImageUrl ?? '',
     );
-    Navigator.pop(context, true);
+
+    final success = await ApiService.updateUserProfile(updatedProfile);
+
+    setState(() {
+      _isSaving = false;
+    });
+
+    if (success) {
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('プロフィール更新に失敗しました')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _bioController.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,10 +97,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 onTap: _pickImage,
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage: _uploadedImageUrl != null
-                      ? NetworkImage(_uploadedImageUrl!)
+                  backgroundImage:
+                      _uploadedImageUrl != null ? NetworkImage(_uploadedImageUrl!) : null,
+                  child: _uploadedImageUrl == null
+                      ? Icon(Icons.camera_alt, size: 30)
                       : null,
-                  child: _uploadedImageUrl == null ? Icon(Icons.camera_alt, size: 30) : null,
                 ),
               ),
             ),
@@ -83,11 +113,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             TextField(
               controller: _bioController,
               decoration: InputDecoration(labelText: '自己紹介'),
+              maxLines: 3,
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _saveProfile,
-              child: Text('保存'),
+              onPressed: _isSaving ? null : _saveProfile,
+              child: _isSaving ? CircularProgressIndicator(color: Colors.white) : Text('保存'),
             ),
           ],
         ),
