@@ -1,1 +1,2 @@
- main_branch発行確認
+localhost:8000 は FastAPI のサーバーアドレスです。Flutter 実機やエミュレータで使う場合は 10.0.2.2:8000 にしてください。
+JWT 認証を導入している場合は、各リクエストのヘッダーにトークンを付ける必要があります（Authorization: Bearer <token>

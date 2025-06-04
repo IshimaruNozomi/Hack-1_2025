@@ -3,6 +3,9 @@ import '../models/user_profile.dart';
 import '../models/post.dart';
 import '../services/api_service.dart';
 import 'profile_edit_screen.dart';
+import 'profile_screen.dart';
+import 'user_search_screen.dart'; // ← 追加
+import '../models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -16,6 +19,9 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<UserProfile> _profileFuture;
   late Future<List<Post>> _userPostsFuture;
+  late Future<List<User>> _followingFuture;
+  bool isOwnProfile = false;
+  bool isFollowing = false;
 
   @override
   void initState() {
@@ -23,9 +29,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    _profileFuture = ApiService.getUserProfile(widget.userId);
-    _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
+  void _loadData() async {
+    final currentUserId = await ApiService.getCurrentUserId();
+    setState(() {
+      isOwnProfile = widget.userId == currentUserId;
+      _profileFuture = ApiService.getUserProfile(widget.userId);
+      _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
+      _followingFuture = ApiService.getFollowing(widget.userId);
+    });
+    if (!isOwnProfile) {
+      final following = await ApiService.getFollowing(currentUserId);
+      setState(() {
+        isFollowing = following.any((u) => u.id == widget.userId);
+      });
+    }
+  }
+
+  void _toggleFollow() async {
+    final currentUserId = await ApiService.getCurrentUserId();
+    if (isFollowing) {
+      await ApiService.unfollowUser(widget.userId);
+    } else {
+      await ApiService.followUser(widget.userId);
+    }
+    setState(() {
+      isFollowing = !isFollowing;
+      _followingFuture = ApiService.getFollowing(currentUserId);
+    });
   }
 
   @override
@@ -56,23 +86,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: 5),
               Text(profile.bio),
               SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ProfileEditScreen(profile: profile),
-                    ),
-                  );
-                  if (result == true) {
-                    setState(() {
-                      _loadData();
-                    });
-                  }
-                },
-                child: Text("編集"),
-              ),
+
+              // 自分のプロフィール時のみ表示
+              if (isOwnProfile) ...[
+                ElevatedButton(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileEditScreen(profile: profile),
+                      ),
+                    );
+                    if (result == true) {
+                      setState(() {
+                        _loadData();
+                      });
+                    }
+                  },
+                  child: Text("編集"),
+                ),
+                SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UserSearchScreen()),
+                    );
+                  },
+                  child: Text("ユーザーを検索"),
+                ),
+              ] else
+                ElevatedButton(
+                  onPressed: _toggleFollow,
+                  child: Text(isFollowing ? "フォロー解除" : "フォロー"),
+                ),
+
               SizedBox(height: 20),
+              Divider(),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("フォロー中", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              SizedBox(
+                height: 100,
+                child: FutureBuilder<List<User>>(
+                  future: _followingFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("フォロー中のユーザーの取得に失敗しました"));
+                    }
+
+                    final users = snapshot.data ?? [];
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final user = users[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => ProfileScreen(userId: user.id)),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(user.iconUrl),
+                                ),
+                                SizedBox(height: 4),
+                                Text(user.username),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
               Divider(),
               Padding(
                 padding: const EdgeInsets.all(8.0),

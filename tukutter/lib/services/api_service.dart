@@ -128,5 +128,26 @@ static Future<String?> uploadProfileImage(String userId, File imageFile) async {
       return null;
     }
   }
+  
+  static Future<void> deletePost(String postId) async {
+  final response = await http.delete(
+    Uri.parse('$_baseUrl/posts/$postId'),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('投稿の削除に失敗しました');
+  }
+}
+
+static Future<List<UserProfile>> searchUsers(String query) async {
+  final response = await http.get(Uri.parse('$baseUrl/search_users?query=$query'));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => UserProfile.fromJson(json)).toList();
+  } else {
+    throw Exception('ユーザー検索に失敗しました');
+  }
+}
 
 }
