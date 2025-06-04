@@ -147,7 +147,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   trailing: isMine
                       ? IconButton(
                           icon: Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: () => _deletePost(post.postId),
+                          onPressed: () =>
+                              _deletePost(post.postId.toString()), // ← 修正済み
                         )
                       : null,
                 ),
