@@ -5,7 +5,7 @@ import '../services/api_service.dart';
 import 'profile_edit_screen.dart';
 import 'profile_screen.dart';
 import 'user_search_screen.dart'; // ← 追加
-// import '../models/user.dart';
+import '../models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
