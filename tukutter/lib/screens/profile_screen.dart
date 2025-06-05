@@ -1,10 +1,11 @@
+// screens/profile_screen.dart
+
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../models/post.dart';
 import '../services/api_service.dart';
 import 'profile_edit_screen.dart';
-import 'profile_screen.dart';
-import 'user_search_screen.dart'; // ← 追加
+import 'user_search_screen.dart';
 import '../models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -31,16 +32,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadData() async {
     final currentUserId = await ApiService.getCurrentUserId();
+
     setState(() {
       isOwnProfile = widget.userId == currentUserId;
       _profileFuture = ApiService.getUserProfile(widget.userId);
       _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
       _followingFuture = ApiService.getFollowing(widget.userId);
     });
+
     if (!isOwnProfile) {
-      final following = await ApiService.getFollowing(currentUserId);
+      final followingUsers = await ApiService.getFollowing(currentUserId);
       setState(() {
-        isFollowing = following.any((u) => u.id == widget.userId);
+        isFollowing = followingUsers.any((u) => u.id == widget.userId);
       });
     }
   }
@@ -48,9 +51,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _toggleFollow() async {
     final currentUserId = await ApiService.getCurrentUserId();
     if (isFollowing) {
-      await ApiService.unfollowUser(widget.userId);
+      await ApiService.unfollowUser(currentUserId, widget.userId);
     } else {
-      await ApiService.followUser(widget.userId);
+      await ApiService.followUser(currentUserId, widget.userId);
     }
     setState(() {
       isFollowing = !isFollowing;
@@ -87,7 +90,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(profile.bio),
               SizedBox(height: 10),
 
-              // 自分のプロフィール時のみ表示
               if (isOwnProfile) ...[
                 ElevatedButton(
                   onPressed: () async {
@@ -98,9 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     );
                     if (result == true) {
-                      setState(() {
-                        _loadData();
-                      });
+                      _loadData();
                     }
                   },
                   child: Text("編集"),
@@ -144,62 +144,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       itemCount: users.length,
                       itemBuilder: (context, index) {
                         final user = users[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => ProfileScreen(userId: user.id)),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: [
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: NetworkImage(user.iconUrl),
-                                ),
-                                SizedBox(height: 4),
-                                Text(user.username),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              Divider(),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text("投稿一覧", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              Expanded(
-                child: FutureBuilder<List<Post>>(
-                  future: _userPostsFuture,
-                  builder: (context, postSnapshot) {
-                    if (postSnapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (postSnapshot.hasError) {
-                      return Center(child: Text('投稿の読み込みに失敗しました'));
-                    } else if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
-                      return Center(child: Text('投稿がありません'));
-                    }
-
-                    final posts = postSnapshot.data!;
-                    return ListView.builder(
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-                        return Card(
-                          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          child: ListTile(
-                            leading: post.imageUrl.isNotEmpty
-                                ? Image.network(post.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
-                                : null,
-                            title: Text(post.content),
-                            subtitle: Text("投稿日: ${post.createdAt}"),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: NetworkImage(user.iconUrl ?? ''),
+                                radius: 30,
+                              ),
+                              SizedBox(height: 5),
+                              Text(user.name ?? ''),
+                            ],
                           ),
                         );
                       },

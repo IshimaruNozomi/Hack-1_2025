@@ -1,191 +1,202 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../models/post.dart';
+import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
+import '../models/post.dart';
+import '../services/api_service.dart';
+import 'profile_edit_screen.dart';
+import 'user_search_screen.dart';
 import '../models/user.dart';
-import 'dart:io';
-import 'package:http_parser/http_parser.dart';
-import 'package:mime/mime.dart';
 
-class ApiService {
-  static const String _baseUrl = 'http://127.0.0.1:8000';
+class ProfileScreen extends StatefulWidget {
+  final String userId;
 
-  // =============================
-  // 投稿関連
-  // =============================
+  const ProfileScreen({required this.userId});
 
-  static Future<bool> sendPost({
-    required String userId,
-    required String content,
-    required String imageUrl,
-  }) async {
-    final url = Uri.parse('$_baseUrl/create_post');
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'user_id': userId,
-        'content': content,
-        'image_url': imageUrl,
-      }),
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<UserProfile> _profileFuture;
+  late Future<List<Post>> _userPostsFuture;
+  late Future<List<User>> _followingFuture;
+  bool isOwnProfile = false;
+  bool isFollowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() async {
+    final currentUserId = await ApiService.getCurrentUserId();
+    setState(() {
+      isOwnProfile = widget.userId == currentUserId;
+      _profileFuture = ApiService.getUserProfile(widget.userId);
+      _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
+      _followingFuture = ApiService.getFollowing(widget.userId);
+    });
+    if (!isOwnProfile) {
+      final following = await ApiService.getFollowing(currentUserId);
+      setState(() {
+        isFollowing = following.contains(widget.userId);
+      });
+    }
+  }
+
+  void _toggleFollow() async {
+    final currentUserId = await ApiService.getCurrentUserId();
+    if (isFollowing) {
+      await ApiService.unfollowUser(widget.userId);
+    } else {
+      await ApiService.followUser(widget.userId);
+    }
+    setState(() {
+      isFollowing = !isFollowing;
+      _followingFuture = ApiService.getFollowing(currentUserId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('プロフィール')),
+      body: FutureBuilder<UserProfile>(
+        future: _profileFuture,
+        builder: (context, profileSnapshot) {
+          if (profileSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (profileSnapshot.hasError) {
+            return Center(child: Text('プロフィールの読み込みに失敗しました'));
+          } else if (!profileSnapshot.hasData) {
+            return Center(child: Text('プロフィールが存在しません'));
+          }
+
+          final profile = profileSnapshot.data!;
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                CircleAvatar(
+                  backgroundImage: NetworkImage(profile.iconUrl),
+                  radius: 50,
+                ),
+                SizedBox(height: 10),
+                Text(profile.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                SizedBox(height: 5),
+                Text(profile.bio),
+                SizedBox(height: 10),
+
+                if (isOwnProfile) ...[
+                  ElevatedButton(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileEditScreen(profile: profile),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadData();
+                      }
+                    },
+                    child: Text("編集"),
+                  ),
+                  SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const UserSearchScreen()),
+                      );
+                    },
+                    child: Text("ユーザーを検索"),
+                  ),
+                ] else
+                  ElevatedButton(
+                    onPressed: _toggleFollow,
+                    child: Text(isFollowing ? "フォロー解除" : "フォロー"),
+                  ),
+
+                SizedBox(height: 20),
+                Divider(),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text("フォロー中", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                SizedBox(
+                  height: 100,
+                  child: FutureBuilder<List<User>>(
+                    future: _followingFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text("フォロー中のユーザーの取得に失敗しました"));
+                      }
+
+                      final users = snapshot.data ?? [];
+                      return ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: users.length,
+                        itemBuilder: (context, index) {
+                          final user = users[index];
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  backgroundImage: NetworkImage(user.iconUrl ?? ''),
+                                  radius: 30,
+                                ),
+                                SizedBox(height: 4),
+                                Text(user.name ?? '', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Divider(),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text("投稿", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                FutureBuilder<List<Post>>(
+                  future: _userPostsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("投稿の取得に失敗しました"));
+                    }
+
+                    final posts = snapshot.data ?? [];
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: posts.length,
+                      itemBuilder: (context, index) {
+                        final post = posts[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(post.content),
+                            subtitle: post.imageUrl != null
+                                ? Image.network(post.imageUrl!)
+                                : null,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
-
-    if (response.statusCode == 200) {
-      print("投稿成功: ${response.body}");
-      return true;
-    } else {
-      print("投稿失敗: ${response.statusCode}");
-      return false;
-    }
-  }
-
-  static Future<List<Post>> fetchPosts() async {
-    final url = Uri.parse('$_baseUrl/posts');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = jsonDecode(response.body);
-      return jsonList.map((json) => Post.fromJson(json)).toList();
-    } else {
-      print("投稿一覧の取得に失敗: ${response.statusCode}");
-      throw Exception("Failed to load posts");
-    }
-  }
-
-  static Future<void> deletePost(String postId) async {
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/posts/$postId'),
-    );
-
-    if (response.statusCode != 200) {
-      print('投稿削除失敗: ${response.statusCode}');
-      throw Exception('投稿の削除に失敗しました');
-    }
-  }
-
-  static Future<List<Post>> fetchPostsByUser(String userId) async {
-    final url = Uri.parse('$_baseUrl/users/$userId/posts');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = jsonDecode(response.body);
-      return jsonList.map((json) => Post.fromJson(json)).toList();
-    } else {
-      print("ユーザー投稿一覧の取得に失敗: ${response.statusCode}");
-      throw Exception("Failed to load user posts");
-    }
-  }
-
-  // =============================
-  // プロフィール関連
-  // =============================
-
-  static Future<UserProfile> getUserProfile(String userId) async {
-    final url = Uri.parse('$_baseUrl/profile/$userId');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return UserProfile.fromJson(jsonDecode(response.body));
-    } else {
-      print('プロフィール取得失敗: ${response.statusCode}');
-      throw Exception('Failed to load profile');
-    }
-  }
-
-  static Future<bool> updateUserProfile(UserProfile profile) async {
-    final url = Uri.parse('$_baseUrl/update_profile/${profile.userId}');
-    final response = await http.put(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(profile.toJson()),
-    );
-
-    if (response.statusCode == 200) {
-      print('プロフィール更新成功');
-      return true;
-    } else {
-      print('プロフィール更新失敗: ${response.statusCode}');
-      return false;
-    }
-  }
-
-  static Future<String?> uploadProfileImage(String userId, File imageFile) async {
-    final url = Uri.parse('$_baseUrl/upload_profile_image/$userId');
-    final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
-
-    final request = http.MultipartRequest('POST', url)
-      ..files.add(await http.MultipartFile.fromPath(
-        'file',
-        imageFile.path,
-        contentType: MediaType.parse(mimeType),
-      ));
-
-    final streamed = await request.send();
-    final response = await http.Response.fromStream(streamed);
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      return data['url'];
-    } else {
-      print('画像アップロード失敗: ${response.statusCode}');
-      return null;
-    }
-  }
-
-  static Future<List<UserProfile>> searchUsers(String query) async {
-    final url = Uri.parse('$_baseUrl/search_users?query=$query');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => UserProfile.fromJson(json)).toList();
-    } else {
-      print('ユーザー検索失敗: ${response.statusCode}');
-      throw Exception('ユーザー検索に失敗しました');
-    }
-  }
-
-  // =============================
-  // フォロー関連
-  // =============================
-
-  static Future<List<String>> getFollowing(String userId) async {
-    final url = Uri.parse('$_baseUrl/users/$userId/following');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = jsonDecode(response.body);
-      return jsonList.cast<String>();
-    } else {
-      throw Exception('フォロー情報の取得に失敗しました');
-    }
-  }
-
-  static Future<void> followUser(String userIdToFollow) async {
-    final url = Uri.parse('$_baseUrl/follow/$userIdToFollow');
-    final response = await http.post(url);
-
-    if (response.statusCode != 200) {
-      throw Exception('フォローに失敗しました');
-    }
-  }
-
-  static Future<void> unfollowUser(String userIdToUnfollow) async {
-    final url = Uri.parse('$_baseUrl/unfollow/$userIdToUnfollow');
-    final response = await http.post(url);
-
-    if (response.statusCode != 200) {
-      throw Exception('フォロー解除に失敗しました');
-    }
-  }
-
-  // =============================
-  // ユーザー認証ヘルパー（仮実装）
-  // =============================
-
-  static Future<String> getCurrentUserId() async {
-    // 実際はログイン中のユーザーIDを返す処理を追加
-    return 'dummy_user_id';
   }
 }
