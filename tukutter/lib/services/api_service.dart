@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/post.dart';
 import '../models/user_profile.dart';
+import '../models/user.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -13,7 +14,6 @@ class ApiService {
   // 投稿関連
   // =============================
 
-  // 投稿を作成（POST /create_post）
   static Future<bool> sendPost({
     required String userId,
     required String content,
@@ -40,7 +40,6 @@ class ApiService {
     }
   }
 
-  // 投稿一覧を取得（GET /posts）
   static Future<List<Post>> fetchPosts() async {
     final url = Uri.parse('$_baseUrl/posts');
     final response = await http.get(url);
@@ -54,7 +53,6 @@ class ApiService {
     }
   }
 
-  // 投稿を削除（DELETE /posts/{post_id}）
   static Future<void> deletePost(String postId) async {
     final response = await http.delete(
       Uri.parse('$_baseUrl/posts/$postId'),
@@ -66,7 +64,6 @@ class ApiService {
     }
   }
 
-  // 指定ユーザーの投稿一覧（GET /users/{user_id}/posts）
   static Future<List<Post>> fetchPostsByUser(String userId) async {
     final url = Uri.parse('$_baseUrl/users/$userId/posts');
     final response = await http.get(url);
@@ -84,7 +81,6 @@ class ApiService {
   // プロフィール関連
   // =============================
 
-  // プロフィール取得（GET /profile/{user_id}）
   static Future<UserProfile> getUserProfile(String userId) async {
     final url = Uri.parse('$_baseUrl/profile/$userId');
     final response = await http.get(url);
@@ -97,7 +93,6 @@ class ApiService {
     }
   }
 
-  // プロフィール更新（PUT /update_profile/{user_id}）
   static Future<bool> updateUserProfile(UserProfile profile) async {
     final url = Uri.parse('$_baseUrl/update_profile/${profile.userId}');
     final response = await http.put(
@@ -115,7 +110,6 @@ class ApiService {
     }
   }
 
-  // プロフィール画像をアップロード（POST /upload_profile_image/{user_id}）
   static Future<String?> uploadProfileImage(String userId, File imageFile) async {
     final url = Uri.parse('$_baseUrl/upload_profile_image/$userId');
     final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
@@ -139,7 +133,6 @@ class ApiService {
     }
   }
 
-  // ユーザー検索（GET /search_users?query=xxx）
   static Future<List<UserProfile>> searchUsers(String query) async {
     final url = Uri.parse('$_baseUrl/search_users?query=$query');
     final response = await http.get(url);
@@ -151,5 +144,48 @@ class ApiService {
       print('ユーザー検索失敗: ${response.statusCode}');
       throw Exception('ユーザー検索に失敗しました');
     }
+  }
+
+  // =============================
+  // フォロー関連
+  // =============================
+
+  static Future<List<String>> getFollowing(String userId) async {
+    final url = Uri.parse('$_baseUrl/users/$userId/following');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      return jsonList.cast<String>();
+    } else {
+      throw Exception('フォロー情報の取得に失敗しました');
+    }
+  }
+
+  static Future<void> followUser(String userIdToFollow) async {
+    final url = Uri.parse('$_baseUrl/follow/$userIdToFollow');
+    final response = await http.post(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('フォローに失敗しました');
+    }
+  }
+
+  static Future<void> unfollowUser(String userIdToUnfollow) async {
+    final url = Uri.parse('$_baseUrl/unfollow/$userIdToUnfollow');
+    final response = await http.post(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('フォロー解除に失敗しました');
+    }
+  }
+
+  // =============================
+  // ユーザー認証ヘルパー（仮実装）
+  // =============================
+
+  static Future<String> getCurrentUserId() async {
+    // 実際はログイン中のユーザーIDを返す処理を追加
+    return 'dummy_user_id';
   }
 }
