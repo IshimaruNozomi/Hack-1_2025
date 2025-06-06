@@ -30,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadData() async {
     final String currentUserId = await ApiService.getCurrentUserId();
-
     setState(() {
       isOwnProfile = widget.userId == currentUserId;
       // _profileFuture, _userPostsFuture, _followingFutureが適切な型でFutureを受け取るようにAPIのレスポンス型を変更する必要があることがわかります。
@@ -38,7 +37,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
       _followingFuture = ApiService.getFollowing(widget.userId);
     });
-
     if (!isOwnProfile) {
       final List<User> followingUsers = await ApiService.getFollowing(currentUserId);
       setState(() {
