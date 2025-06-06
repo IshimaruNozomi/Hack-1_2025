@@ -62,7 +62,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       iconUrl: _uploadedImageUrl ?? '',
     );
 
-    final success = await ApiService.updateUserProfile(updatedProfile);
+    final success = await ApiService.updateUserProfile(updatedProfile.toJson());
 
     setState(() {
       _isSaving = false;
