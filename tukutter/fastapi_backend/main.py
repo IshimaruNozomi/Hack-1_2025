@@ -1,19 +1,24 @@
 from fastapi import FastAPI, HTTPException, UploadFile, APIRouter, Depends, File
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from firebase_admin import auth, credentials, initialize_app
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
-from fastapi.responses import JSONResponse
-from fastapi_backend import models, schemas
-from models import Like, Comment, User
+import models, schemas
+from models import Like, Comment, User, Post
 from database import get_db
 import psycopg2
 import psycopg2.extras
 import os
 import shutil
 import uuid
-from routers import user  # 別ルーター（ユーザー系）
+from routers import user
+import numpy as np
+from PIL import Image
+from keras.layers import TFSMLayer
+import tensorflow as tf
+import io
 
 # FastAPIインスタンス生成
 app = FastAPI()
@@ -23,7 +28,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 cred = credentials.Certificate("tukutter-8008e-firebase-adminsdk-fbsvc-044e51cfb2.json")
 initialize_app(cred)
 
-# ファイルアップロードディレクトリ
+# アップロードディレクトリ
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -39,7 +44,7 @@ DB_CONFIG = {
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-# Pydantic モデル定義
+# Pydanticモデル
 class LoginRequest(BaseModel):
     id_token: str
 
@@ -58,10 +63,7 @@ class Profile(BaseModel):
     bio: str = ''
     icon_url: str = ''
 
-# ---------------------------------
-# メインルーティング定義
-# ---------------------------------
-
+# ルーター
 router = APIRouter()
 
 @app.get("/")
@@ -230,10 +232,9 @@ def get_user_posts(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DBエラー: {e}")
 
-# ==============================
-# likes関連エンドポイント
-# ==============================
-
+# ==========================
+# likes
+# ==========================
 @router.post("/like")
 def like_post(like: schemas.LikeCreate, db: Session = Depends(get_db)):
     existing_like = db.query(Like).filter_by(post_id=like.post_id, user_id=like.user_id).first()
@@ -249,10 +250,9 @@ def get_like_count(post_id: int, db: Session = Depends(get_db)):
     count = db.query(Like).filter_by(post_id=post_id).count()
     return {"post_id": post_id, "likes": count}
 
-# ==============================
-# コメント関連エンドポイント
-# ==============================
-
+# ==========================
+# comments
+# ==========================
 @router.post("/comments", response_model=schemas.CommentRead)
 def create_comment(comment: schemas.CommentCreate, db: Session = Depends(get_db)):
     db_comment = models.Comment(**comment.dict())
@@ -274,15 +274,39 @@ def delete_comment(comment_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "コメントを削除しました"}
 
-# ==============================
+# ==========================
 # ユーザー検索
-# ==============================
-
+# ==========================
 @router.get("/search_users")
 def search_users(query: str, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.name.ilike(f"%{query}%")).all()
     return [{"user_id": user.user_id, "name": user.name} for user in users]
 
-# ルーターを登録
+# ==========================
+# AI分類API
+# ==========================
+
+model_path = os.path.abspath('/Users/nozomi0407/Hack-1_2025/bot/my_model')
+model = TFSMLayer(model_path, call_endpoint="serving_default")
+class_names = ['カレー', 'チャーハン', 'ハンバーグ', 'ラーメン', 'ピザ']
+
+@app.post("/classify_image")
+async def classify_image(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        image = image.resize((224, 224))
+        image_array = np.array(image) / 255.0
+        image_array = image_array[np.newaxis, ...]
+        predictions = model(image_array)
+        predicted_index = np.argmax(predictions)
+        predicted_label = class_names[predicted_index]
+        return {"predicted_label": predicted_label}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"分類エラー: {e}")
+
+# ==========================
+# ルーター登録
+# ==========================
 app.include_router(router)
 app.include_router(user.router)
