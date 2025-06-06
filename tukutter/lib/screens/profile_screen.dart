@@ -29,23 +29,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadData() async {
-    final currentUserId = await ApiService.getCurrentUserId();
+    final String currentUserId = await ApiService.getCurrentUserId();
     setState(() {
       isOwnProfile = widget.userId == currentUserId;
+      // _profileFuture, _userPostsFuture, _followingFutureが適切な型でFutureを受け取るようにAPIのレスポンス型を変更する必要があることがわかります。
       _profileFuture = ApiService.getUserProfile(widget.userId);
       _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
       _followingFuture = ApiService.getFollowing(widget.userId);
     });
     if (!isOwnProfile) {
-      final followingUsers = await ApiService.getFollowing(currentUserId);
+      final List<User> followingUsers = await ApiService.getFollowing(currentUserId);
       setState(() {
-        isFollowing = followingUsers.any((u) => u.id == widget.userId);
+        isFollowing = followingUsers.any((User u) => u.id == widget.userId);
       });
     }
   }
 
   void _toggleFollow() async {
-    final currentUserId = await ApiService.getCurrentUserId();
+    final String currentUserId = await ApiService.getCurrentUserId();
     if (isFollowing) {
       await ApiService.unfollowUser(currentUserId, widget.userId);
     } else {
@@ -96,13 +97,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (isOwnProfile) ...[
                   ElevatedButton(
                     onPressed: () async {
-                      final result = await Navigator.push(
+                      final bool result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ProfileEditScreen(profile: profile),
                         ),
                       );
-                      if (result == true) {
+                      if (result) {
                         _loadData();
                       }
                     },
@@ -123,56 +124,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: _toggleFollow,
                     child: Text(isFollowing ? "フォロー解除" : "フォロー"),
                   ),
-
-                SizedBox(height: 20),
                 Divider(),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text("フォロー中", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
-                SizedBox(
-                  height: 100,
-                  child: FutureBuilder<List<User>>(
-                    future: _followingFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text("フォロー中のユーザーの取得に失敗しました"));
-                      }
+                FutureBuilder<List<User>>(
+                  future: _followingFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("フォロー中のユーザーの取得に失敗しました"));
+                    }
 
-                      final users = snapshot.data ?? [];
-                      if (users.isEmpty) {
-                        return Center(child: Text("フォロー中のユーザーはいません"));
-                      }
+                    final List<User> users = snapshot.data!;
+                    if (users.isEmpty) {
+                      return Center(child: Text("フォロー中のユーザーはいません"));
+                    }
 
-                      return ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: users.length,
-                        itemBuilder: (context, index) {
-                          final user = users[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Column(
-                              children: [
-                                CircleAvatar(
-                                  backgroundImage: user.iconUrl != null && user.iconUrl!.isNotEmpty
-                                      ? NetworkImage(user.iconUrl!)
-                                      : null,
-                                  radius: 30,
-                                  child: user.iconUrl == null || user.iconUrl!.isEmpty
-                                      ? Icon(Icons.person)
-                                      : null,
-                                ),
-                                SizedBox(height: 5),
-                                Text(user.name ?? ''),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final User user = users[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: (user.iconUrl != null && user.iconUrl!.isNotEmpty)
+                                    ? NetworkImage(user.iconUrl!)
+                                    : null,
+                                radius: 30,
+                                child: (user.iconUrl == null || user.iconUrl!.isEmpty)
+                                    ? Icon(Icons.person)
+                                    : null,
+                              ),
+                              SizedBox(height: 5),
+                              Text(user.name ?? ''),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),
