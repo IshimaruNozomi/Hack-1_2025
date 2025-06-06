@@ -4,6 +4,8 @@ import 'firebase_options.dart'; // flutterfire configure で生成されるフ�
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/login_screen.dart';
+import 'screens/timeline_screen.dart';
+import 'package:tukutter/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +78,21 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('ログイン成功: $userEmail'),
+                  TextButton( // タイムライン画面に遷移するボタン
+                    onPressed:(){
+                      Navigator.pushReplacement(
+                        context, 
+                        MaterialPageRoute(
+                          builder:(_) => TimelineScreen(
+                            uid: FirebaseAuth.instance.currentUser!.uid, 
+                            email: FirebaseAuth.instance.currentUser!.email ?? '',
+                            name: FirebaseAuth.instance.currentUser!.displayName ?? '',
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('タイムラインへ'),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: signOut,

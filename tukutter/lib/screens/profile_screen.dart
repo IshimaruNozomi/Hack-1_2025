@@ -1,5 +1,3 @@
-// screens/profile_screen.dart
-
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../models/post.dart';
@@ -32,14 +30,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadData() async {
     final currentUserId = await ApiService.getCurrentUserId();
-
     setState(() {
       isOwnProfile = widget.userId == currentUserId;
       _profileFuture = ApiService.getUserProfile(widget.userId);
       _userPostsFuture = ApiService.fetchPostsByUser(widget.userId);
       _followingFuture = ApiService.getFollowing(widget.userId);
     });
-
     if (!isOwnProfile) {
       final followingUsers = await ApiService.getFollowing(currentUserId);
       setState(() {
